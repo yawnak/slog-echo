@@ -52,6 +52,21 @@ type Config struct {
 	WithSpanID         bool
 	WithTraceID        bool
 
+	WithoutRequestTime    bool
+	WithoutMethod         bool
+	WithoutHost           bool
+	WithoutPath           bool
+	WithoutQuery          bool
+	WithoutParams         bool
+	WithoutIP             bool
+	WithoutReferer        bool
+	WithoutRoute          bool
+	WithoutResponseTime   bool
+	WithoutStatus         bool
+	WithoutLatency        bool
+	WithoutRequestLength  bool
+	WithoutResponseLength bool
+
 	Filters []Filter
 }
 
@@ -164,23 +179,22 @@ func NewWithConfig(logger *slog.Logger, config Config) echo.MiddlewareFunc {
 
 			baseAttributes := []slog.Attr{}
 
-			requestAttributes := []slog.Attr{
-				slog.Time("time", start.UTC()),
-				slog.String("method", method),
-				slog.String("host", host),
-				slog.String("path", path),
-				slog.String("query", query),
-				slog.Any("params", params),
-				slog.String("route", route),
-				slog.String("ip", ip),
-				slog.String("referer", referer),
-			}
+			requestAttributes := make([]slog.Attr, 0, 9)
 
-			responseAttributes := []slog.Attr{
-				slog.Time("time", end.UTC()),
-				slog.Duration("latency", latency),
-				slog.Int("status", status),
-			}
+			requestAttributes = appendIf(requestAttributes, slog.Time("time", start.UTC()), !config.WithoutRequestTime)
+			requestAttributes = appendIf(requestAttributes, slog.String("method", method), !config.WithoutMethod)
+			requestAttributes = appendIf(requestAttributes, slog.String("host", host), !config.WithoutHost)
+			requestAttributes = appendIf(requestAttributes, slog.String("path", path), !config.WithoutPath)
+			requestAttributes = appendIf(requestAttributes, slog.String("query", query), !config.WithoutQuery)
+			requestAttributes = appendIf(requestAttributes, slog.Any("params", params), !config.WithoutParams)
+			requestAttributes = appendIf(requestAttributes, slog.String("route", route), !config.WithoutRoute)
+			requestAttributes = appendIf(requestAttributes, slog.String("ip", ip), !config.WithoutIP)
+			requestAttributes = appendIf(requestAttributes, slog.String("referer", referer), !config.WithoutReferer)
+
+			responseAttributes := make([]slog.Attr, 0, 5)
+			responseAttributes = appendIf(responseAttributes, slog.Time("time", end.UTC()), !config.WithoutResponseTime)
+			responseAttributes = appendIf(responseAttributes, slog.Duration("latency", latency), !config.WithoutLatency)
+			responseAttributes = appendIf(responseAttributes, slog.Int("status", status), !config.WithoutStatus)
 
 			if config.WithRequestID {
 				requestID := req.Header.Get(echo.HeaderXRequestID)
@@ -196,7 +210,7 @@ func NewWithConfig(logger *slog.Logger, config Config) echo.MiddlewareFunc {
 			baseAttributes = append(baseAttributes, extractTraceSpanID(c.Request().Context(), config.WithTraceID, config.WithSpanID)...)
 
 			// request body
-			requestAttributes = append(requestAttributes, slog.Int("length", br.bytes))
+			requestAttributes = appendIf(requestAttributes, slog.Int("length", br.bytes), config.WithoutRequestLength)
 			if config.WithRequestBody {
 				requestAttributes = append(requestAttributes, slog.String("body", br.body.String()))
 			}
@@ -348,4 +362,11 @@ func extractTraceSpanID(ctx context.Context, withTraceID bool, withSpanID bool) 
 	}
 
 	return attrs
+}
+
+func appendIf(slice []slog.Attr, attr slog.Attr, t bool) []slog.Attr {
+	if t {
+		return append(slice, attr)
+	}
+	return slice
 }

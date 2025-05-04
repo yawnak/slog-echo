@@ -1,4 +1,4 @@
-module github.com/samber/slog-echo
+module github.com/yawnak/slog-echo
 
 go 1.21
 

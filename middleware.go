@@ -57,7 +57,9 @@ type Config struct {
 	WithoutHost           bool
 	WithoutPath           bool
 	WithoutQuery          bool
+	WithoutEmptyQuery     bool
 	WithoutParams         bool
+	WithoutEmptyParams    bool
 	WithoutIP             bool
 	WithoutReferer        bool
 	WithoutRoute          bool
@@ -180,13 +182,12 @@ func NewWithConfig(logger *slog.Logger, config Config) echo.MiddlewareFunc {
 			baseAttributes := []slog.Attr{}
 
 			requestAttributes := make([]slog.Attr, 0, 9)
-
 			requestAttributes = appendIf(requestAttributes, slog.Time("time", start.UTC()), !config.WithoutRequestTime)
 			requestAttributes = appendIf(requestAttributes, slog.String("method", method), !config.WithoutMethod)
 			requestAttributes = appendIf(requestAttributes, slog.String("host", host), !config.WithoutHost)
 			requestAttributes = appendIf(requestAttributes, slog.String("path", path), !config.WithoutPath)
-			requestAttributes = appendIf(requestAttributes, slog.String("query", query), !config.WithoutQuery)
-			requestAttributes = appendIf(requestAttributes, slog.Any("params", params), !config.WithoutParams)
+			requestAttributes = appendIf(requestAttributes, slog.String("query", query), !config.WithoutQuery && (!config.WithoutEmptyQuery || len(query) >= 0))
+			requestAttributes = appendIf(requestAttributes, slog.Any("params", params), !config.WithoutParams && (!config.WithoutEmptyParams || len(params) > 0))
 			requestAttributes = appendIf(requestAttributes, slog.String("route", route), !config.WithoutRoute)
 			requestAttributes = appendIf(requestAttributes, slog.String("ip", ip), !config.WithoutIP)
 			requestAttributes = appendIf(requestAttributes, slog.String("referer", referer), !config.WithoutReferer)

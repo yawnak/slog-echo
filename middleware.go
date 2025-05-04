@@ -186,7 +186,7 @@ func NewWithConfig(logger *slog.Logger, config Config) echo.MiddlewareFunc {
 			requestAttributes = appendIf(requestAttributes, slog.String("method", method), !config.WithoutMethod)
 			requestAttributes = appendIf(requestAttributes, slog.String("host", host), !config.WithoutHost)
 			requestAttributes = appendIf(requestAttributes, slog.String("path", path), !config.WithoutPath)
-			requestAttributes = appendIf(requestAttributes, slog.String("query", query), !config.WithoutQuery && (!config.WithoutEmptyQuery || len(query) >= 0))
+			requestAttributes = appendIf(requestAttributes, slog.String("query", query), !config.WithoutQuery && (!config.WithoutEmptyQuery || len(query) > 0))
 			requestAttributes = appendIf(requestAttributes, slog.Any("params", params), !config.WithoutParams && (!config.WithoutEmptyParams || len(params) > 0))
 			requestAttributes = appendIf(requestAttributes, slog.String("route", route), !config.WithoutRoute)
 			requestAttributes = appendIf(requestAttributes, slog.String("ip", ip), !config.WithoutIP)
